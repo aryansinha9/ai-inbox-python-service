@@ -1,0 +1,578 @@
+[
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hey what are your services?",
+    "timestamp": 1751944916.534146
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment.",
+    "timestamp": 1751944916.534868
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hey what are your services?",
+    "timestamp": 1751944920.322753
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment.",
+    "timestamp": 1751944920.324227
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "What are your prices?",
+    "timestamp": 1751944933.7368152
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment.",
+    "timestamp": 1751944933.7386081
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "What are your prices?",
+    "timestamp": 1751944937.6278532
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment.",
+    "timestamp": 1751944937.6292858
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hey what ur prices",
+    "timestamp": 1751945400.948839
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment.",
+    "timestamp": 1751945400.950551
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hey what ur prices",
+    "timestamp": 1751945404.575341
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment.",
+    "timestamp": 1751945404.576596
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Heh what\u2019s your prices?",
+    "timestamp": 1751945725.80286
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment.",
+    "timestamp": 1751945725.8055801
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Heh what\u2019s your prices?",
+    "timestamp": 1751945729.5913322
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment.",
+    "timestamp": 1751945729.593597
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hi",
+    "timestamp": 1751945740.445295
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment.",
+    "timestamp": 1751945740.4467762
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hi",
+    "timestamp": 1751945743.927077
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment.",
+    "timestamp": 1751945743.9279108
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hi",
+    "timestamp": 1751945760.668813
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? Your AI doctor",
+    "timestamp": 1751945760.671284
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hi",
+    "timestamp": 1751945765.4371939
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? Your AI doctor",
+    "timestamp": 1751945765.438588
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hey how are you",
+    "timestamp": 1751946013.039215
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? Your AI doctor",
+    "timestamp": 1751946013.0415208
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hey how are you",
+    "timestamp": 1751946020.004031
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? Your AI doctor",
+    "timestamp": 1751946020.005625
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Prices ?",
+    "timestamp": 1751946052.672946
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Here are the prices for our services:\n- AI Chatbot Setup: $150\n- Monthly Maintenance: $50\nIs there anything else you would like to know? Your AI doctor",
+    "timestamp": 1751946052.6758158
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Prices ?",
+    "timestamp": 1751946059.322262
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Here are the prices for our services:\n- AI Chatbot Setup: $150\n- Monthly Maintenance: $50\nIs there anything else you would like to know? Your AI doctor",
+    "timestamp": 1751946059.3256269
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hey mate",
+    "timestamp": 1751946312.534914
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? Your AI doctor",
+    "timestamp": 1751946312.537668
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hey mate",
+    "timestamp": 1751946316.85869
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? Your AI doctor",
+    "timestamp": 1751946316.861069
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "What are your proxies",
+    "timestamp": 1751946571.0396092
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment. Your AI doctor",
+    "timestamp": 1751946571.043761
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "What are your proxies",
+    "timestamp": 1751946572.142635
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment. Your AI doctor",
+    "timestamp": 1751946572.144732
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "What are your proxies",
+    "timestamp": 1751946574.8254342
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment. Your AI doctor",
+    "timestamp": 1751946574.827225
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "What are your proxies",
+    "timestamp": 1751946576.056017
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment. Your AI doctor",
+    "timestamp": 1751946576.0581949
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hi",
+    "timestamp": 1751946955.412585
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? Your AI doctor",
+    "timestamp": 1751946955.416003
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hi",
+    "timestamp": 1751946959.64925
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? Your AI doctor",
+    "timestamp": 1751946959.6510699
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Yo",
+    "timestamp": 1751947000.506804
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? Your AI doctor",
+    "timestamp": 1751947000.510457
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Yo",
+    "timestamp": 1751947006.548343
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? Your AI doctor",
+    "timestamp": 1751947006.550566
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Yo",
+    "timestamp": 1751947306.518741
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? Your AI doctor",
+    "timestamp": 1751947306.5227678
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Yo",
+    "timestamp": 1751947310.376394
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? Your AI doctor",
+    "timestamp": 1751947310.379207
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Yes",
+    "timestamp": 1751947385.3299048
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "How can I assist you today? Your AI doctor",
+    "timestamp": 1751947385.333573
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Yes",
+    "timestamp": 1751947389.837933
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "How can I assist you today? Your AI doctor",
+    "timestamp": 1751947389.840518
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Prices",
+    "timestamp": 1751947409.496866
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Here are the prices for our services:\n- AI Chatbot Setup: $150\n- Monthly Maintenance: $50\nIs there anything specific you would like to know about the prices? Your AI doctor",
+    "timestamp": 1751947409.499219
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Prices",
+    "timestamp": 1751947413.4889941
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Here are the prices for our services:\n- AI Chatbot Setup: $150\n- Monthly Maintenance: $50\nIs there anything specific you would like to know about the prices? Your AI doctor",
+    "timestamp": 1751947413.4912791
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hi",
+    "timestamp": 1751947652.40242
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? Your AI doctor",
+    "timestamp": 1751947652.405309
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hi",
+    "timestamp": 1751947656.3858
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? Your AI doctor",
+    "timestamp": 1751947656.387947
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Yo",
+    "timestamp": 1751947710.65619
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? \ud83d\ude0a",
+    "timestamp": 1751947710.658737
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Yo",
+    "timestamp": 1751947714.342962
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? \ud83d\ude0a",
+    "timestamp": 1751947714.3475509
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hey",
+    "timestamp": 1751947929.180477
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? \ud83d\ude0a",
+    "timestamp": 1751947929.184972
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Hey",
+    "timestamp": 1751947933.1736681
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? \ud83d\ude0a",
+    "timestamp": 1751947933.175851
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "What\u2019s good",
+    "timestamp": 1751948135.825789
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "I'm here to help with any questions you have about our services at Ananta Systems. Just let me know! \ud83d\ude0a",
+    "timestamp": 1751948135.8290088
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Yo",
+    "timestamp": 1751948758.628892
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? \ud83d\ude0a",
+    "timestamp": 1751948758.6327958
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "incoming",
+    "text": "Batao kitne ki aap charge karte ho",
+    "timestamp": 1751948834.106306
+  },
+  {
+    "user_id": "1655545141677853",
+    "direction": "outgoing",
+    "text": "Humari AI Chatbot Setup ki price $150 hai aur Monthly Maintenance ki price $50 hai. Kaise help kar sakta hoon? \ud83d\ude0a",
+    "timestamp": 1751948834.109654
+  },
+  {
+    "user_id": "717652537847885",
+    "direction": "incoming",
+    "text": "Yo mama wag1",
+    "timestamp": 1751950032.4952939
+  },
+  {
+    "user_id": "717652537847885",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment. \ud83d\ude0a",
+    "timestamp": 1751950032.4978828
+  },
+  {
+    "user_id": "717652537847885",
+    "direction": "incoming",
+    "text": "hi do you have prices",
+    "timestamp": 1751981026.3512661
+  },
+  {
+    "user_id": "717652537847885",
+    "direction": "outgoing",
+    "text": "Yes, we offer Ai Chatbot Setup for $150 and Monthly Maintenance for $50 \ud83d\ude0a",
+    "timestamp": 1751981026.355652
+  },
+  {
+    "user_id": "717652537847885",
+    "direction": "incoming",
+    "text": "hi",
+    "timestamp": 1751981131.661047
+  },
+  {
+    "user_id": "717652537847885",
+    "direction": "outgoing",
+    "text": "Hello! How can I assist you today? \ud83d\ude0a",
+    "timestamp": 1751981131.665837
+  },
+  {
+    "user_id": "717652537847885",
+    "direction": "incoming",
+    "text": "hi do you have prices",
+    "timestamp": 1751981504.695267
+  },
+  {
+    "user_id": "717652537847885",
+    "direction": "outgoing",
+    "text": "Yes, we offer Ai Chatbot Setup for $150 and Monthly Maintenance for $50. How can I help you further? \ud83d\ude0a",
+    "timestamp": 1751981504.698957
+  },
+  {
+    "user_id": "717652537847885",
+    "direction": "incoming",
+    "text": "kya discount milega?",
+    "timestamp": 1751981533.952418
+  },
+  {
+    "user_id": "717652537847885",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment. \ud83d\ude0a",
+    "timestamp": 1751981533.95415
+  },
+  {
+    "user_id": "717652537847885",
+    "direction": "incoming",
+    "text": "hello aap hindi mei baath kar sak te ho?",
+    "timestamp": 1751981561.917155
+  },
+  {
+    "user_id": "717652537847885",
+    "direction": "outgoing",
+    "text": "I'll connect you with a human expert to answer that. One moment. \ud83d\ude0a",
+    "timestamp": 1751981561.919192
+  },
+  {
+    "user_id": "717652537847885",
+    "direction": "incoming",
+    "text": "whatservices do you offe",
+    "timestamp": 1751981575.7331998
+  },
+  {
+    "user_id": "717652537847885",
+    "direction": "outgoing",
+    "text": "We offer Ai Chatbot Setup and Monthly Maintenance services. How can I assist you further? \ud83d\ude0a",
+    "timestamp": 1751981575.735143
+  }
+]
