@@ -60,6 +60,27 @@ def load_business_data(spreadsheet_id):
     business_data = {'services': {}, 'config': {}}
     try:
         scope = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+
+        # --- THIS IS THE DEPLOYMENT FIX ---
+        # In a cloud environment, we can't rely on the JSON file being physically present.
+        # Instead, we load its content from a secure environment variable.
+        
+        # 1. Get the JSON content from the environment variable.
+        gac_json_str = os.getenv("GSPREAD_SERVICE_ACCOUNT_JSON")
+        
+        if gac_json_str:
+            # 2. Convert the JSON string into a Python dictionary.
+            gac_json_dict = json.loads(gac_json_str)
+            
+            # 3. Authenticate using the dictionary.
+            creds = ServiceAccountCredentials.from_json_keyfile_dict(gac_json_dict, scope)
+        else:
+            # Fallback for local development: read from the file.
+            creds_file_name = 'ananta-systems-ai-fc3b926f61b1.json'
+            creds_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), creds_file_name)
+            creds = ServiceAccountCredentials.from_json_keyfile_name(creds_file_path, scope)
+        
+        
         # IMPORTANT: Ensure your Google service account JSON key file is in the same directory
         creds_file_name = 'ananta-systems-ai-fc3b926f61b1.json' 
         creds_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), creds_file_name)
