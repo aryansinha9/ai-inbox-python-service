@@ -52,7 +52,61 @@ def save_message(entry):
     except Exception as e:
         print(f"ERROR saving message log: {e}")
 
+# --- CORRECTED CODE ---
 def load_business_data(spreadsheet_id):
+    """
+    Loads business configuration and services from a given Google Sheet ID.
+    Assumes two tabs in the sheet: 'Services' and 'Config'.
+    """
+    business_data = {'services': {}, 'config': {}}
+    try:
+        scope = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+
+        # Get the JSON content from the environment variable. This is for deployment.
+        gac_json_str = os.getenv("GSPREAD_SERVICE_ACCOUNT_JSON")
+        
+        if gac_json_str:
+            # If the environment variable exists (on Railway), load credentials from it.
+            print("--- Authenticating with Google Sheets via environment variable. ---")
+            gac_json_dict = json.loads(gac_json_str)
+            creds = ServiceAccountCredentials.from_json_keyfile_dict(gac_json_dict, scope)
+        else:
+            # Otherwise (for local development), fall back to reading from the JSON file.
+            print("--- Authenticating with Google Sheets via local JSON file. ---")
+            creds_file_name = 'ananta-systems-ai-fc3b926f61b1.json'
+            creds_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), creds_file_name)
+            creds = ServiceAccountCredentials.from_json_keyfile_name(creds_file_path, scope)
+        
+        # --- This part now runs AFTER the if/else, using the correct 'creds' ---
+        client = gspread.authorize(creds)
+        spreadsheet = client.open_by_key(spreadsheet_id)
+
+        # 1. Load Services from the 'Services' tab
+        services_sheet = spreadsheet.worksheet('Services')
+        services_records = services_sheet.get_all_records()
+        for row in services_records:
+            service_name = str(row.get('Service', '')).strip().lower()
+            if service_name:
+                business_data['services'][service_name] = {
+                    'price': str(row.get('Price', '')).strip(),
+                    'duration': str(row.get('Duration', '')).strip()
+                }
+
+        # 2. Load Config from the 'Config' tab
+        config_sheet = spreadsheet.worksheet('Config')
+        config_records = config_sheet.get_all_records()
+        for row in config_records:
+            key = str(row.get('Key', '')).strip()
+            value = str(row.get('Value', '')).strip()
+            if key:
+                business_data['config'][key] = value
+
+        print(f"Successfully loaded data for sheet {spreadsheet_id}: {len(business_data['services'])} services, {len(business_data['config'])} config items.")
+        return business_data
+
+    except Exception as e:
+        print(f"\n--- ERROR loading Google Sheet data for sheet ID {spreadsheet_id}: {e} ---")
+        return None # Return None on failure
     """
     Loads business configuration and services from a given Google Sheet ID.
     Assumes two tabs in the sheet: 'Services' and 'Config'.
