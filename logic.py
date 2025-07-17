@@ -90,7 +90,7 @@ def initialize_openai():
 def format_services_for_prompt(service_dict):
     """Formats the service dictionary into a string for the AI prompt."""
     if not service_dict: return "No specific service details are loaded."
-    return "\n".join([f"- {name.title()}: Price is {details['price']}" for name, details in sorted(service_dict.items())])
+    return "\n".join([f"- {name.title()}: Price is {details['price']}, Duration is {details['duration']}" for name, details in sorted(service_dict.items())])
 
 # --- Step 3: Main AI Logic Function (with the definitive history fix) ---
 def get_chatbot_response(user_id, user_prompt, business_data, booking_data):
@@ -100,6 +100,7 @@ def get_chatbot_response(user_id, user_prompt, business_data, booking_data):
     config = business_data.get('config', {})
     service_info = format_services_for_prompt(business_data.get('services', {}))
     today = datetime.now().strftime('%Y-%m-%d')
+    handoff_phrase = config.get('handoff_code', "I'm not sure about that, but I can get a team member to help you.")
     
     system_prompt = (
         f"You are an automated appointment booking assistant for a business named {config.get('business_name', 'our shop')}.\n"
@@ -107,16 +108,47 @@ def get_chatbot_response(user_id, user_prompt, business_data, booking_data):
         "--- PRIMARY GOAL & RULES ---\n"
         "1. Your main purpose is to help users check for available appointment times and book appointments using the provided tools.\n"
         "2. **CRITICAL RULE:** You MUST NOT answer questions about availability or attempt to book an appointment by making up text. You must use the `check_availability` tool to find open slots first, and then use the `create_appointment` tool to finalize a booking. If the user is vague, you must ask clarifying questions to get the parameters needed for the tools (like service name, date, time, and customer name).\n"
-        "3. **FALLBACK BEHAVIOR:** If the user asks a general question NOT related to booking (e.g., 'What are your prices?'), then and only then should you answer using the 'Business Information' provided below.\n\n"
+        f"3. **HANDOFF RULE:** If you absolutely cannot answer a question using the provided tools or business information, you MUST respond with ONLY the following phrase: '{handoff_phrase}'\n"
+        "4. **FALLBACK BEHAVIOR:** If the user asks a general question NOT related to booking (e.g., 'What are your prices?'), then and only then should you answer using the 'Business Information' provided below.\n\n"
         f"--- Business Information for Fallback Questions ---\n{service_info}\n"
     )
     
     tools = [
-        {"type": "function", "function": {"name": "check_availability", "description": "Checks for available appointment slots.", "parameters": {"type": "object", "properties": {"service_name": {"type": "string"}, "date": {"type": "string", "description": "YYYY-MM-DD"}}, "required": ["service_name", "date"]}}},
-        {"type": "function", "function": {"name": "create_appointment", "description": "Books an appointment after availability is confirmed.", "parameters": {"type": "object", "properties": {"service_name": {"type": "string"}, "date": {"type": "string"}, "time": {"type": "string"}, "customer_name": {"type": "string"}}, "required": ["service_name", "date", "time", "customer_name"]}}}
+        {
+            "type": "function",
+            "function": {
+                "name": "check_availability",
+                "description": "Checks for available appointment slots.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "service_name": {"type": "string"},
+                        "date": {"type": "string", "description": "YYYY-MM-DD"}
+                    },
+                    "required": ["service_name", "date"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "create_appointment",
+                "description": "Books a service appointment after availability has been confirmed.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "service_name": {"type": "string"},
+                        "date": {"type": "string"},
+                        "time": {"type": "string"},
+                        "customer_name": {"type": "string"},
+                        "customer_email": {"type": "string", "description": "The customer's email address for confirmation."}
+                    },
+                    "required": ["service_name", "date", "time", "customer_name", "customer_email"]
+                }
+            }
+        }
     ]
     
-    # --- THIS IS THE DEFINITIVE FIX FOR HISTORY MANAGEMENT ---
     # Build a temporary message list for this turn, starting with the system prompt and the permanent history.
     messages = [{"role": "system", "content": system_prompt}] + conversation_histories[user_id]
     messages.append({"role": "user", "content": user_prompt})
