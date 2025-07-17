@@ -1,7 +1,7 @@
 # ai-inbox-python-service/logic.py
 # ==============================================================================
-# AI "SPECIALIST" MICROSERVICE (DYNAMIC BOOKING ROUTER)
-# This version dynamically calls the correct booking provider based on user settings.
+# FINAL PRODUCTION VERSION
+# This version includes the fix for the OpenAI history bug.
 # ==============================================================================
 
 # --- Step 1: Imports ---
@@ -106,7 +106,7 @@ def format_services_for_prompt(service_dict):
     if not service_dict: return "No specific service details are loaded."
     return "\n".join([f"- {name.title()}: Price is {details['price']}" for name, details in sorted(service_dict.items())])
 
-# --- Step 5: Main AI Logic Function ---
+# --- Step 5: Main AI Logic Function (with history fix) ---
 def get_chatbot_response(user_id, user_prompt, business_data, booking_data):
     """Gets a response from OpenAI, using tools that are routed to the correct provider."""
     global conversation_histories
@@ -130,18 +130,23 @@ def get_chatbot_response(user_id, user_prompt, business_data, booking_data):
         {"type": "function", "function": {"name": "create_appointment", "description": "Books an appointment after availability is confirmed.", "parameters": {"type": "object", "properties": {"service_name": {"type": "string"}, "date": {"type": "string"}, "time": {"type": "string"}, "customer_name": {"type": "string"}}, "required": ["service_name", "date", "time", "customer_name"]}}}
     ]
 
-    history = conversation_histories.get(user_id, [])
-    history.append({"role": "user", "content": user_prompt})
+    # Use the long-term history, but build a temporary message list for this specific turn
+    messages_for_this_turn = conversation_histories[user_id].copy()
+    messages_for_this_turn.append({"role": "user", "content": user_prompt})
 
     try:
-        response = OPENAI_CLIENT.chat.completions.create(model="gpt-4-turbo", messages=[{"role": "system", "content": system_prompt}] + history, tools=tools, tool_choice="auto")
+        response = OPENAI_CLIENT.chat.completions.create(
+            model="gpt-4-turbo",
+            messages=[{"role": "system", "content": system_prompt}] + messages_for_this_turn,
+            tools=tools,
+            tool_choice="auto"
+        )
         response_message = response.choices[0].message
         tool_calls = response_message.tool_calls
 
         if tool_calls:
-            history.append(response_message)
-            provider = booking_data.get('provider', 'none')
-            client_api_key = booking_data.get('api_key', 'DUMMY_API_KEY')
+            # Append the AI's decision to call a tool to our temporary list
+            messages_for_this_turn.append(response_message)
             
             available_functions = {
                 "check_availability": get_availability_from_provider,
@@ -154,21 +159,37 @@ def get_chatbot_response(user_id, user_prompt, business_data, booking_data):
                 if not function_to_call: continue
 
                 args = json.loads(tool_call.function.arguments)
-                print(f"[ROUTER] Routing to provider '{provider}' for function '{function_name}'")
+                args['provider'] = booking_data.get('provider', 'none')
+                args['client_api_key'] = booking_data.get('api_key')
                 
-                function_response = function_to_call(provider=provider, client_api_key=client_api_key, **args)
-                history.append({"tool_call_id": tool_call.id, "role": "tool", "name": function_name, "content": function_response})
+                print(f"[ROUTER] Routing to provider '{args['provider']}' for function '{function_name}'")
+                
+                function_response = function_to_call(**args)
+                messages_for_this_turn.append({
+                    "tool_call_id": tool_call.id,
+                    "role": "tool",
+                    "name": function_name,
+                    "content": function_response
+                })
             
-            second_response = OPENAI_CLIENT.chat.completions.create(model="gpt-4-turbo", messages=history)
+            second_response = OPENAI_CLIENT.chat.completions.create(
+                model="gpt-4-turbo",
+                messages=messages_for_this_turn
+            )
             final_response = second_response.choices[0].message.content
-            history.append({"role": "assistant", "content": final_response})
-            conversation_histories[user_id] = history[-10:]
+            
+            # Update the long-term history
+            conversation_histories[user_id].append({"role": "user", "content": user_prompt})
+            conversation_histories[user_id].append({"role": "assistant", "content": final_response})
+            conversation_histories[user_id] = conversation_histories[user_id][-10:]  # Keep history concise
             return final_response
 
+        # Fallback for non-tool responses
         ai_response_content = response_message.content
         if ai_response_content:
-            history.append({"role": "assistant", "content": ai_response_content})
-            conversation_histories[user_id] = history[-10:]
+            conversation_histories[user_id].append({"role": "user", "content": user_prompt})
+            conversation_histories[user_id].append({"role": "assistant", "content": ai_response_content})
+            conversation_histories[user_id] = conversation_histories[user_id][-10:]
             return ai_response_content.strip()
         return "How else can I help?"
 
@@ -179,19 +200,30 @@ def get_chatbot_response(user_id, user_prompt, business_data, booking_data):
 # --- Step 6: Instagram Messaging & Startup ---
 def send_instagram_message(recipient_id, message_text, page_token):
     url = f"https://graph.facebook.com/v19.0/me/messages?access_token={page_token}"
-    headers, data = {'Content-Type': 'application/json'}, {"recipient": {"id": recipient_id}, "message": {"text": message_text}, "messaging_type": "RESPONSE"}
+    headers = {'Content-Type': 'application/json'}
+    data = {
+        "recipient": {"id": recipient_id},
+        "message": {"text": message_text},
+        "messaging_type": "RESPONSE"
+    }
     try:
-        response = requests.post(url, headers=headers, json=data); response.raise_for_status()
-    except requests.exceptions.RequestException as e: print(f"ERROR Sending Instagram Message: {e}")
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR Sending Instagram Message: {e}")
 
 print("--- Initializing Chatbot Services ---")
-if not INTERNAL_API_KEY: print("FATAL ERROR: INTERNAL_API_KEY is missing."); sys.exit(1)
+if not INTERNAL_API_KEY:
+    print("FATAL ERROR: INTERNAL_API_KEY is missing.")
+    sys.exit(1)
 OPENAI_CLIENT = initialize_openai()
 print("--- Initialization Complete. AI Microservice is Ready. ---")
 
 @app.route('/api/process-message', methods=['POST'])
 def process_message_api():
-    if request.headers.get('X-Internal-API-Key') != INTERNAL_API_KEY: abort(401)
+    if request.headers.get('X-Internal-API-Key') != INTERNAL_API_KEY:
+        abort(401)
+    
     data = request.get_json()
     user_id = data.get('user_id')
     msg = data.get('message_text')
@@ -199,17 +231,32 @@ def process_message_api():
     token = data.get('page_access_token')
     booking_integration_data = data.get('booking_integration', {})
     
-    if not all([user_id, msg, sheet_id, token]): return jsonify({"error": "Missing required data"}), 400
+    if not all([user_id, msg, sheet_id, token]):
+        return jsonify({"error": "Missing required data"}), 400
     
     business_data = load_business_data(sheet_id)
-    if not business_data: return jsonify({"error": f"Failed to load data for sheet_id: {sheet_id}"}), 500
+    if not business_data:
+        return jsonify({"error": f"Failed to load data for sheet_id: {sheet_id}"}), 500
     
     bot_response = get_chatbot_response(user_id, msg, business_data, booking_integration_data)
     send_instagram_message(user_id, bot_response, token)
     
-    save_message({"user_id": user_id, "direction": "incoming", "text": msg, "timestamp": time.time()})
-    save_message({"user_id": user_id, "direction": "outgoing", "text": bot_response, "timestamp": time.time()})
-    return jsonify({"status": "success", "reply_sent": bot_response}), 200
+    save_message({
+        "user_id": user_id,
+        "direction": "incoming",
+        "text": msg,
+        "timestamp": time.time()
+    })
+    save_message({
+        "user_id": user_id,
+        "direction": "outgoing",
+        "text": bot_response,
+        "timestamp": time.time()
+    })
+    return jsonify({
+        "status": "success",
+        "reply_sent": bot_response
+    }), 200
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5001))
