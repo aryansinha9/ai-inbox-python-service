@@ -1,8 +1,7 @@
 # AI_logic/logic.py
 # ==============================================================================
-# AI "SPECIALIST" MICROSERVICE
-# This application's sole purpose is to receive a secure API call,
-# process a message using OpenAI and Google Sheets, and send a reply.
+# AI "SPECIALIST" MICROSERVICE (UPGRADED WITH FUNCTION CALLING)
+# This application can now use external tools to get real-time information.
 # ==============================================================================
 
 # --- Step 1: Imports ---
@@ -16,6 +15,7 @@ import requests
 from dotenv import load_dotenv
 from oauth2client.service_account import ServiceAccountCredentials
 from flask import Flask, request, abort, jsonify
+from datetime import datetime, timedelta
 
 # --- Step 2: Flask App Initialization & Load Environment Variables ---
 app = Flask(__name__)
@@ -23,14 +23,8 @@ load_dotenv()
 print("Flask app initialized and environment variables loaded.")
 
 # --- Step 3: Global Constants & Initializations ---
-
-# Path for the chat log JSON file
 CHAT_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat_log.json")
-
-# --- NEW ---: Secret key to secure our internal API
 INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
-
-# This is a cache for conversation histories, not a global state for business data
 conversation_histories = {}
 
 # --- Step 4: Helper Functions ---
@@ -52,36 +46,25 @@ def save_message(entry):
     except Exception as e:
         print(f"ERROR saving message log: {e}")
 
-# --- CORRECTED CODE ---
 def load_business_data(spreadsheet_id):
-    """
-    Loads business configuration and services from a given Google Sheet ID.
-    Assumes two tabs in the sheet: 'Services' and 'Config'.
-    """
-    business_data = {'services': {}, 'config': {}}
+    """Loads business configuration and services from a given Google Sheet ID."""
+    business_data = {'services': {}, 'config': {}, 'bookingIntegration': {}}
     try:
         scope = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-
-        # Get the JSON content from the environment variable. This is for deployment.
         gac_json_str = os.getenv("GSPREAD_SERVICE_ACCOUNT_JSON")
         
         if gac_json_str:
-            # If the environment variable exists (on Railway), load credentials from it.
-            print("--- Authenticating with Google Sheets via environment variable. ---")
             gac_json_dict = json.loads(gac_json_str)
             creds = ServiceAccountCredentials.from_json_keyfile_dict(gac_json_dict, scope)
         else:
-            # Otherwise (for local development), fall back to reading from the JSON file.
-            print("--- Authenticating with Google Sheets via local JSON file. ---")
             creds_file_name = 'ananta-systems-ai-fc3b926f61b1.json'
             creds_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), creds_file_name)
             creds = ServiceAccountCredentials.from_json_keyfile_name(creds_file_path, scope)
         
-        # --- This part now runs AFTER the if/else, using the correct 'creds' ---
         client = gspread.authorize(creds)
         spreadsheet = client.open_by_key(spreadsheet_id)
 
-        # 1. Load Services from the 'Services' tab
+        # Load Services
         services_sheet = spreadsheet.worksheet('Services')
         services_records = services_sheet.get_all_records()
         for row in services_records:
@@ -92,82 +75,23 @@ def load_business_data(spreadsheet_id):
                     'duration': str(row.get('Duration', '')).strip()
                 }
 
-        # 2. Load Config from the 'Config' tab
+        # Load Config
         config_sheet = spreadsheet.worksheet('Config')
         config_records = config_sheet.get_all_records()
         for row in config_records:
             key = str(row.get('Key', '')).strip()
             value = str(row.get('Value', '')).strip()
             if key:
-                business_data['config'][key] = value
+                if key == 'booking_provider_api_key': # Load booking API key securely
+                    business_data['bookingIntegration']['apiKey'] = value
+                else:
+                    business_data['config'][key] = value
 
-        print(f"Successfully loaded data for sheet {spreadsheet_id}: {len(business_data['services'])} services, {len(business_data['config'])} config items.")
+        print(f"Successfully loaded data for sheet {spreadsheet_id}")
         return business_data
-
     except Exception as e:
         print(f"\n--- ERROR loading Google Sheet data for sheet ID {spreadsheet_id}: {e} ---")
-        return None # Return None on failure
-    """
-    Loads business configuration and services from a given Google Sheet ID.
-    Assumes two tabs in the sheet: 'Services' and 'Config'.
-    """
-    business_data = {'services': {}, 'config': {}}
-    try:
-        scope = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-
-        # --- THIS IS THE DEPLOYMENT FIX ---
-        # In a cloud environment, we can't rely on the JSON file being physically present.
-        # Instead, we load its content from a secure environment variable.
-        
-        # 1. Get the JSON content from the environment variable.
-        gac_json_str = os.getenv("GSPREAD_SERVICE_ACCOUNT_JSON")
-        
-        if gac_json_str:
-            # 2. Convert the JSON string into a Python dictionary.
-            gac_json_dict = json.loads(gac_json_str)
-            
-            # 3. Authenticate using the dictionary.
-            creds = ServiceAccountCredentials.from_json_keyfile_dict(gac_json_dict, scope)
-        else:
-            # Fallback for local development: read from the file.
-            creds_file_name = 'ananta-systems-ai-fc3b926f61b1.json'
-            creds_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), creds_file_name)
-            creds = ServiceAccountCredentials.from_json_keyfile_name(creds_file_path, scope)
-        
-        
-        # IMPORTANT: Ensure your Google service account JSON key file is in the same directory
-        creds_file_name = 'ananta-systems-ai-fc3b926f61b1.json' 
-        creds_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), creds_file_name)
-        creds = ServiceAccountCredentials.from_json_keyfile_name(creds_file_path, scope)
-        client = gspread.authorize(creds)
-        spreadsheet = client.open_by_key(spreadsheet_id)
-
-        # 1. Load Services from the 'Services' tab
-        services_sheet = spreadsheet.worksheet('Services')
-        services_records = services_sheet.get_all_records()
-        for row in services_records:
-            service_name = str(row.get('Service', '')).strip().lower()
-            if service_name:
-                business_data['services'][service_name] = {
-                    'price': str(row.get('Price', '')).strip(),
-                    'duration': str(row.get('Duration', '')).strip()
-                }
-
-        # 2. Load Config from the 'Config' tab
-        config_sheet = spreadsheet.worksheet('Config')
-        config_records = config_sheet.get_all_records()
-        for row in config_records:
-            key = str(row.get('Key', '')).strip()
-            value = str(row.get('Value', '')).strip()
-            if key:
-                business_data['config'][key] = value
-
-        print(f"Successfully loaded data for sheet {spreadsheet_id}: {len(business_data['services'])} services, {len(business_data['config'])} config items.")
-        return business_data
-
-    except Exception as e:
-        print(f"\n--- ERROR loading Google Sheet data for sheet ID {spreadsheet_id}: {e} ---")
-        return None # Return None on failure
+        return None
 
 def initialize_openai():
     """Initializes and returns the OpenAI client."""
@@ -185,77 +109,136 @@ def format_services_for_prompt(service_dict):
     lines = [f"- {name.title()}: Price is {details['price']}, Takes about {details['duration']}" for name, details in sorted(service_dict.items())]
     return "\n".join(lines)
 
-# AI_logic/logic.py
+# --- NEW: The function that will actually get data from the booking service ---
+def get_setmore_availability(service_name: str, date: str, client_api_key: str):
+    """
+    Makes a REAL API call to Setmore to get available time slots.
+    NOTE: This is a SIMULATED function. You will need to replace the logic
+    inside with actual API calls based on Setmore's documentation.
+    """
+    print(f"--- SIMULATING: Checking Setmore availability for '{service_name}' on {date} ---")
+    
+    # In a real application, you would make an authenticated API call here.
+    # For now, we'll return a hardcoded list for testing purposes.
+    if "haircut" in service_name.lower():
+        return json.dumps({
+            "available_times": ["10:00 AM", "11:30 AM", "2:00 PM", "3:30 PM"]
+        })
+    else:
+        return json.dumps({
+            "available_times": ["9:00 AM", "4:00 PM"]
+        })
 
+# --- The Main AI Logic Function (Heavily Upgraded) ---
 def get_chatbot_response(user_id, user_prompt, business_data):
-    """
-    --- UPGRADED ---
-    Gets a response from OpenAI based on the DYNAMIC business data.
-    """
+    """Gets a response from OpenAI, now with the ability to use tools."""
     global conversation_histories
     if user_id not in conversation_histories:
         conversation_histories[user_id] = []
 
-    # --- DYNAMICALLY PULL CONFIGURATION ---
+    # Dynamically build the system prompt
     config = business_data.get('config', {})
-    
-    # Get general info with defaults
-    booking_link = config.get('booking_link', 'the booking link provided by the business')
-    contact_info = config.get('contact_info', 'the business directly')
-    handoff_code = config.get('handoff_code', "I'll let a human representative handle that.")
-
-    # --- NEW: Get custom personality and instructions ---
-    bot_personality = config.get(
-        'bot_personality', 
-        'You are a helpful AI assistant for a business.' # The default personality
-    )
-    special_instructions = config.get('special_instructions', '') # Default is no special instructions
-    upsell_prompt = config.get('upsell_prompt', '') # Default is no upsell
-
+    bot_personality = config.get('bot_personality', 'You are a helpful AI assistant for a business.')
+    special_instructions = config.get('special_instructions', '')
     service_info_for_prompt = format_services_for_prompt(business_data.get('services', {}))
-
-    # --- THE NEW, DYNAMICALLY BUILT SYSTEM PROMPT ---
+    
+    # Get today's date to provide context to the AI
+    today = datetime.now().strftime('%Y-%m-%d')
     system_prompt = (
-        f"{bot_personality}\n\n" # Use the client's custom personality
-        f"Your goal is to answer customer questions based ONLY on the information provided below.\n\n"
+        f"{bot_personality}\n\n"
+        f"Today's date is {today}.\n\n"
+        f"Your goal is to answer customer questions or assist with booking based on the tools and information provided.\n\n"
         f"--- Business Information ---\n"
-        f"Booking Link: {booking_link}\n"
-        f"Primary Contact: {contact_info}\n"
         f"Services Offered:\n{service_info_for_prompt}\n"
         f"\n--- Instructions ---\n"
-        f"1. Answer questions using ONLY the 'Business Information' provided.\n"
-        f"2. **CRITICAL RULE:** If you cannot answer from the info provided (e.g., asking for appointment times), you MUST reply with ONLY the phrase: {handoff_code}\n"
-        f"3. Do not make up information.\n"
-        # --- ADD THE CUSTOM INSTRUCTIONS ---
+        f"1. If the user wants to book an appointment or check availability, use the provided tools.\n"
+        f"2. For all other questions, answer using only the 'Business Information' provided.\n"
+        f"3. Do not make up information. If you cannot answer, say so politely.\n"
         f"4. SPECIAL INSTRUCTION FROM THE BUSINESS OWNER: {special_instructions}\n"
-        f"5. UPSELL INSTRUCTION: {upsell_prompt}"
     )
 
+    # Define the "toolbox" for the AI
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "check_availability",
+                "description": "Use this function to check for available appointment time slots for a specific service on a given date.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "service_name": {"type": "string", "description": "The name of the service the user is asking about, e.g., 'mens haircut', 'consultation'."},
+                        "date": {"type": "string", "description": "The desired date for the appointment, in YYYY-MM-DD format."}
+                    },
+                    "required": ["service_name", "date"]
+                }
+            }
+        }
+    ]
+
+    # Append the user's new message to the history
     history = conversation_histories[user_id]
     history.append({"role": "user", "content": user_prompt})
 
     try:
-        # The rest of the function remains exactly the same...
+        # FIRST AI CALL: Check if a tool needs to be used
+        print("[AI] First call to OpenAI to check for tool usage.")
         response = OPENAI_CLIENT.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4-turbo",
             messages=[{"role": "system", "content": system_prompt}] + history,
-            max_tokens=150,
-            temperature=0.7 # Maybe slightly more creative for different personalities
+            tools=tools,
+            tool_choice="auto"
         )
-        ai_response_content = response.choices[0].message.content.strip()
-        history.append({"role": "assistant", "content": ai_response_content})
-        conversation_histories[user_id] = history[-10:]
-        return ai_response_content
+        response_message = response.choices[0].message
+        tool_calls = response_message.tool_calls
+
+        # If the AI wants to use a tool, execute it
+        if tool_calls:
+            print(f"[AI] Tool call detected: {tool_calls[0].function.name}")
+            tool_call = tool_calls[0]
+            function_name = tool_call.function.name
+            
+            if function_name == "check_availability":
+                args = json.loads(tool_call.function.arguments)
+                service_name = args.get("service_name")
+                date = args.get("date")
+
+                print(f"[TOOL] Executing 'check_availability' with args: {args}")
+                client_api_key = business_data.get('bookingIntegration', {}).get('apiKey', 'DUMMY_API_KEY')
+                function_response = get_setmore_availability(service_name, date, client_api_key)
+                
+                print(f"[TOOL] Function returned: {function_response}")
+
+                # Append the AI's decision and the tool's result to the history
+                history.append(response_message)
+                history.append({"tool_call_id": tool_call.id, "role": "tool", "name": function_name, "content": function_response})
+
+                # SECOND AI CALL: Formulate a final, human-friendly response
+                print("[AI] Second call to OpenAI to formulate final response.")
+                second_response = OPENAI_CLIENT.chat.completions.create(model="gpt-4-turbo", messages=history)
+                final_response = second_response.choices[0].message.content
+                
+                history.append({"role": "assistant", "content": final_response})
+                conversation_histories[user_id] = history[-10:] # Keep history concise
+                return final_response
+
+        # If no tool was called, proceed as normal
+        print("[AI] No tool call needed. Generating a standard text response.")
+        ai_response_content = response_message.content
+        if ai_response_content:
+            history.append({"role": "assistant", "content": ai_response_content})
+            conversation_histories[user_id] = history[-10:]
+            return ai_response_content.strip()
+        else:
+            return "How else can I help?"
+
     except Exception as e:
         print(f"Error during OpenAI call for user {user_id}: {e}")
-        return handoff_code
+        return "Sorry, I'm having trouble connecting to my brain right now. Please try again in a moment."
 
-# --- MODIFIED to accept a client-specific token ---
 def send_instagram_message(recipient_id, message_text, page_token):
-    """Sends a message back to the user on Instagram using the provided page_token."""
-    print(f"--- Attempting to send message to {recipient_id} using a client-specific token ---")
-    
-    # Use the token passed in from the Node.js server
+    """Sends a message back to the user on Instagram."""
+    print(f"--- Attempting to send message to {recipient_id} ---")
     url = f"https://graph.facebook.com/v19.0/me/messages?access_token={page_token}"
     headers = {'Content-Type': 'application/json'}
     data = {"recipient": {"id": recipient_id}, "message": {"text": message_text}, "messaging_type": "RESPONSE"}
@@ -263,11 +246,9 @@ def send_instagram_message(recipient_id, message_text, page_token):
     try:
         response = requests.post(url, headers=headers, json=data)
         response.raise_for_status()
-        print(f"--- Successfully sent message to {recipient_id} (Status: {response.status_code}) ---")
+        print(f"--- Successfully sent message to {recipient_id} ---")
     except requests.exceptions.RequestException as e:
-        error_details = e.response.text if e.response else str(e)
-        print(f"\n--- ERROR Sending Instagram Message to {recipient_id}: {error_details} ---")
-
+        print(f"\n--- ERROR Sending Instagram Message to {recipient_id}: {e.response.text if e.response else e} ---")
 
 # --- Step 5: Run Startup Initialization ---
 print("--- Initializing Chatbot Services ---")
@@ -277,54 +258,36 @@ if not INTERNAL_API_KEY:
 OPENAI_CLIENT = initialize_openai()
 print("--- Initialization Complete. AI Microservice is Ready and Waiting for API Calls. ---")
 
-
 # --- Step 6: The Upgraded Internal API Route ---
 @app.route('/api/process-message', methods=['POST'])
 def process_message_api():
-    """
-    This is the main entry point. It expects a secure call from our Node.js "CEO" server
-    and receives all necessary data dynamically.
-    """
-    # 1. Check for the secret internal API key
+    """Main entry point for processing messages."""
     request_key = request.headers.get('X-Internal-API-Key')
     if not request_key or request_key != INTERNAL_API_KEY:
-        print("ERROR: Unauthorized API call attempt.")
         abort(401)
 
-    # 2. Get the dynamic data from the request body
     data = request.get_json()
-    user_id = data.get('user_id') # The customer's ID
-    message_text = data.get('message_text')
-    sheet_id = data.get('sheet_id') # The client's specific Google Sheet
-    page_access_token = data.get('page_access_token') # The client's specific Page Token
+    user_id, message_text, sheet_id, page_access_token = data.get('user_id'), data.get('message_text'), data.get('sheet_id'), data.get('page_access_token')
 
     if not all([user_id, message_text, sheet_id, page_access_token]):
-        return jsonify({"error": "Missing required data: user_id, message_text, sheet_id, page_access_token"}), 400
+        return jsonify({"error": "Missing required data"}), 400
 
     print(f"--- Secure API call received for customer {user_id} using sheet {sheet_id} ---")
     
-    # 3. Load the specific business's data from Google Sheets
     business_data = load_business_data(sheet_id)
     if not business_data:
-        error_msg = f"Failed to load data for sheet_id: {sheet_id}"
-        print(error_msg)
-        return jsonify({"error": error_msg}), 500
+        return jsonify({"error": f"Failed to load data for sheet_id: {sheet_id}"}), 500
 
-    # 4. Get the AI's response using the loaded data
     bot_response = get_chatbot_response(user_id, message_text, business_data)
 
-    # 5. Send the response back to the user on Instagram using the client's token
     send_instagram_message(user_id, bot_response, page_access_token)
 
-    # 6. Log the interaction
     save_message({"user_id": user_id, "direction": "incoming", "text": message_text, "timestamp": time.time()})
     save_message({"user_id": user_id, "direction": "outgoing", "text": bot_response, "timestamp": time.time()})
     
-    # 7. Return a success message to the calling Node.js server
     return jsonify({"status": "success", "reply_sent": bot_response}), 200
 
 # --- Step 7: Main Execution ---
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5001))
-    # debug=False is recommended for production
     app.run(host='0.0.0.0', port=port, debug=True)
