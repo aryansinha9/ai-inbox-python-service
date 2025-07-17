@@ -1,10 +1,10 @@
 # ai-inbox-python-service/logic.py
 # ==============================================================================
-# FINAL PRODUCTION VERSION
-# This version includes the fix for the OpenAI history bug.
+# FINAL PRODUCTION VERSION v2
+# This version includes the definitive fix for the OpenAI history management bug.
 # ==============================================================================
 
-# --- Step 1: Imports ---
+# --- Step 1: Imports and Initializations (Unchanged) ---
 import openai
 import gspread
 import time
@@ -17,39 +17,25 @@ from oauth2client.service_account import ServiceAccountCredentials
 from flask import Flask, request, abort, jsonify
 from datetime import datetime
 
-# --- Import the specific provider modules ---
+# --- Provider Modules ---
 from booking_providers import setmore, square
 
-# --- Step 2: Flask App Initialization & Globals ---
 app = Flask(__name__)
 load_dotenv()
-print("Flask app initialized and environment variables loaded.")
-
 CHAT_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat_log.json")
 INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
 conversation_histories = {}
 
-# --- Step 3: Master Router Functions ---
-
+# --- Step 2: Router and Helper Functions (Unchanged) ---
 def get_availability_from_provider(provider: str, **kwargs):
-    """Routes the availability check to the correct provider module."""
-    if provider == 'setmore':
-        return setmore.get_availability(**kwargs)
-    elif provider == 'square':
-        return square.get_availability(**kwargs)
-    else:
-        return json.dumps({"error": "This booking provider is not configured or supported."})
+    if provider == 'setmore': return setmore.get_availability(**kwargs)
+    elif provider == 'square': return square.get_availability(**kwargs)
+    return json.dumps({"error": "This booking provider is not configured or supported."})
 
 def create_appointment_with_provider(provider: str, **kwargs):
-    """Routes the appointment creation to the correct provider module."""
-    if provider == 'setmore':
-        return setmore.create_appointment(**kwargs)
-    elif provider == 'square':
-        return square.create_appointment(**kwargs)
-    else:
-        return json.dumps({"error": "This booking provider is not configured or supported."})
-
-# --- Step 4: Helper Functions ---
+    if provider == 'setmore': return setmore.create_appointment(**kwargs)
+    elif provider == 'square': return square.create_appointment(**kwargs)
+    return json.dumps({"error": "This booking provider is not configured or supported."})
 
 def save_message(entry):
     """Saves a single message entry to the chat log JSON file."""
@@ -106,15 +92,15 @@ def format_services_for_prompt(service_dict):
     if not service_dict: return "No specific service details are loaded."
     return "\n".join([f"- {name.title()}: Price is {details['price']}" for name, details in sorted(service_dict.items())])
 
-# --- Step 5: Main AI Logic Function (with history fix) ---
+# --- Step 3: Main AI Logic Function (with the definitive history fix) ---
 def get_chatbot_response(user_id, user_prompt, business_data, booking_data):
-    """Gets a response from OpenAI, using tools that are routed to the correct provider."""
     global conversation_histories
     if user_id not in conversation_histories: conversation_histories[user_id] = []
 
     config = business_data.get('config', {})
     service_info = format_services_for_prompt(business_data.get('services', {}))
     today = datetime.now().strftime('%Y-%m-%d')
+    
     system_prompt = (
         f"You are an automated appointment booking assistant for a business named {config.get('business_name', 'our shop')}.\n"
         f"Today's date is {today}.\n\n"
@@ -129,30 +115,23 @@ def get_chatbot_response(user_id, user_prompt, business_data, booking_data):
         {"type": "function", "function": {"name": "check_availability", "description": "Checks for available appointment slots.", "parameters": {"type": "object", "properties": {"service_name": {"type": "string"}, "date": {"type": "string", "description": "YYYY-MM-DD"}}, "required": ["service_name", "date"]}}},
         {"type": "function", "function": {"name": "create_appointment", "description": "Books an appointment after availability is confirmed.", "parameters": {"type": "object", "properties": {"service_name": {"type": "string"}, "date": {"type": "string"}, "time": {"type": "string"}, "customer_name": {"type": "string"}}, "required": ["service_name", "date", "time", "customer_name"]}}}
     ]
-
-    # Use the long-term history, but build a temporary message list for this specific turn
-    messages_for_this_turn = conversation_histories[user_id].copy()
-    messages_for_this_turn.append({"role": "user", "content": user_prompt})
+    
+    # --- THIS IS THE DEFINITIVE FIX FOR HISTORY MANAGEMENT ---
+    # Build a temporary message list for this turn, starting with the system prompt and the permanent history.
+    messages = [{"role": "system", "content": system_prompt}] + conversation_histories[user_id]
+    messages.append({"role": "user", "content": user_prompt})
 
     try:
-        response = OPENAI_CLIENT.chat.completions.create(
-            model="gpt-4-turbo",
-            messages=[{"role": "system", "content": system_prompt}] + messages_for_this_turn,
-            tools=tools,
-            tool_choice="auto"
-        )
+        response = OPENAI_CLIENT.chat.completions.create(model="gpt-4-turbo", messages=messages, tools=tools, tool_choice="auto")
         response_message = response.choices[0].message
         tool_calls = response_message.tool_calls
 
         if tool_calls:
-            # Append the AI's decision to call a tool to our temporary list
-            messages_for_this_turn.append(response_message)
+            # Append the AI's decision to use a tool to our temporary list.
+            messages.append(response_message)
             
-            available_functions = {
-                "check_availability": get_availability_from_provider,
-                "create_appointment": create_appointment_with_provider
-            }
-
+            available_functions = {"check_availability": get_availability_from_provider, "create_appointment": create_appointment_with_provider}
+            
             for tool_call in tool_calls:
                 function_name = tool_call.function.name
                 function_to_call = available_functions.get(function_name)
@@ -162,42 +141,36 @@ def get_chatbot_response(user_id, user_prompt, business_data, booking_data):
                 args['provider'] = booking_data.get('provider', 'none')
                 args['client_api_key'] = booking_data.get('api_key')
                 
-                print(f"[ROUTER] Routing to provider '{args['provider']}' for function '{function_name}'")
-                
                 function_response = function_to_call(**args)
-                messages_for_this_turn.append({
-                    "tool_call_id": tool_call.id,
-                    "role": "tool",
-                    "name": function_name,
-                    "content": function_response
-                })
+                
+                # Append the tool's result to our temporary list.
+                messages.append({"tool_call_id": tool_call.id, "role": "tool", "name": function_name, "content": function_response})
             
-            second_response = OPENAI_CLIENT.chat.completions.create(
-                model="gpt-4-turbo",
-                messages=messages_for_this_turn
-            )
+            # Make the second call with the complete temporary list (including tool results).
+            second_response = OPENAI_CLIENT.chat.completions.create(model="gpt-4-turbo", messages=messages)
             final_response = second_response.choices[0].message.content
             
-            # Update the long-term history
+            # NOW, save ONLY the essential dialogue to the PERMANENT history.
             conversation_histories[user_id].append({"role": "user", "content": user_prompt})
             conversation_histories[user_id].append({"role": "assistant", "content": final_response})
-            conversation_histories[user_id] = conversation_histories[user_id][-10:]  # Keep history concise
-            return final_response
-
-        # Fallback for non-tool responses
-        ai_response_content = response_message.content
-        if ai_response_content:
+            
+        else:
+            # If no tools were called, it's a simple text response.
+            final_response = response_message.content
             conversation_histories[user_id].append({"role": "user", "content": user_prompt})
-            conversation_histories[user_id].append({"role": "assistant", "content": ai_response_content})
-            conversation_histories[user_id] = conversation_histories[user_id][-10:]
-            return ai_response_content.strip()
-        return "How else can I help?"
+            if final_response:
+                conversation_histories[user_id].append({"role": "assistant", "content": final_response})
+
+        # Keep the permanent history from getting too long.
+        conversation_histories[user_id] = conversation_histories[user_id][-10:]
+        
+        return final_response.strip() if final_response else "How else can I help you today?"
 
     except Exception as e:
         print(f"Error during OpenAI call for user {user_id}: {e}")
         return "Sorry, there was an error processing your request."
 
-# --- Step 6: Instagram Messaging & Startup ---
+# --- The rest of the file (send_instagram_message, Flask route, startup) is unchanged ---
 def send_instagram_message(recipient_id, message_text, page_token):
     url = f"https://graph.facebook.com/v19.0/me/messages?access_token={page_token}"
     headers = {'Content-Type': 'application/json'}
