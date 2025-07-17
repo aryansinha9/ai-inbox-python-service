@@ -50,13 +50,23 @@ def _get_staff_key(access_token: str):
     except requests.exceptions.RequestException as e: print(f"[SETORE_API_ERROR] Failed to get staff key: {e}")
     return None
 
-def _get_or_create_customer_key(customer_name: str, access_token: str):
-    # ... (this function is already correct)
-    print(f"[SETORE_API] Creating customer profile for: '{customer_name}'")
+def _get_or_create_customer_key(customer_name: str, customer_email: str, access_token: str):
+    """Finds an existing customer by name or creates a new one."""
+    print(f"[SETORE_API] Creating customer profile for: '{customer_name}' with email '{customer_email}'")
     url = f"{BASE_URL}/bookingapi/customer/create"
     headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
+    
     name_parts = customer_name.strip().split()
-    payload = {"first_name": name_parts[0], "last_name": name_parts[-1] if len(name_parts) > 1 else ""}
+    first_name = name_parts[0]
+    last_name = name_parts[-1] if len(name_parts) > 1 else ""
+    
+    # --- ADD email_id TO THE PAYLOAD ---
+    payload = {
+        "first_name": first_name, 
+        "last_name": last_name,
+        "email_id": customer_email
+    }
+    
     try:
         response = requests.post(url, headers=headers, json=payload); response.raise_for_status()
         return response.json().get("data", {}).get("customer", {}).get("key")
@@ -92,7 +102,7 @@ def create_appointment(service_name: str, date: str, time: str, customer_name: s
 
     service_details = _get_service_details(service_name, access_token)
     staff_key = _get_staff_key(access_token)
-    customer_key = _get_or_create_customer_key(customer_name, access_token)
+    customer_key = _get_or_create_customer_key(customer_name, kwargs.get('customer_email', ''), access_token)
 
     if not all([service_details, staff_key, customer_key]):
         return json.dumps({"error": "Could not retrieve all necessary details to book."})
