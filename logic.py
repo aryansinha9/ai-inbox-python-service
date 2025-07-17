@@ -143,13 +143,14 @@ def get_chatbot_response(user_id, user_prompt, business_data):
     today = datetime.now().strftime('%Y-%m-%d')
 
     system_prompt = (
-        f"{bot_personality}\n\nToday's date is {today}.\n\n"
-        "--- Instructions ---\n"
-        "1. Your primary goal is to help users book appointments. You MUST check for availability using the `check_availability` tool before you attempt to book using the `create_appointment` tool.\n"
-        "2. You must collect all necessary information (service, date, time, customer name) before attempting to book.\n"
-        "3. If the user asks a general question, answer using the business info provided below.\n\n"
-        f"--- Business Information ---\n{service_info}\n"
-    )
+    f"You are an automated appointment booking assistant for a business named {config.get('business_name', 'our shop')}.\n"
+    f"Today's date is {today}.\n\n"
+    "--- PRIMARY GOAL & RULES ---\n"
+    "1. Your main purpose is to help users check for available appointment times and book appointments using the provided tools.\n"
+    "2. **CRITICAL RULE:** You MUST NOT answer questions about availability or attempt to book an appointment by making up text. You must use the `check_availability` tool to find open slots first, and then use the `create_appointment` tool to finalize a booking. If the user is vague, you must ask clarifying questions to get the parameters needed for the tools (like service name, date, time, and customer name).\n"
+    "3. **FALLBACK BEHAVIOR:** If the user asks a general question NOT related to booking (e.g., 'What are your prices?', 'What services do you offer?'), then and only then should you answer using the 'Business Information' provided below.\n\n"
+    f"--- Business Information for Fallback Questions ---\n{service_info}\n"
+)
     
     tools = [
         {"type": "function", "function": {"name": "check_availability", "description": "Checks for available appointment slots.", "parameters": {"type": "object", "properties": {"service_name": {"type": "string"}, "date": {"type": "string", "description": "YYYY-MM-DD"}}, "required": ["service_name", "date"]}}},
