@@ -17,7 +17,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 from flask import Flask, request, abort, jsonify
 from datetime import datetime
 
-# --- NEW: Import the specific provider modules ---
+# --- Import the specific provider modules ---
 from booking_providers import setmore, square
 
 # --- Step 2: Flask App Initialization & Globals ---
@@ -38,7 +38,6 @@ def get_availability_from_provider(provider: str, **kwargs):
     elif provider == 'square':
         return square.get_availability(**kwargs)
     else:
-        # Fallback if the client has a provider configured that we don't support yet
         return json.dumps({"error": "This booking provider is not configured or supported."})
 
 def create_appointment_with_provider(provider: str, **kwargs):
@@ -67,8 +66,8 @@ def save_message(entry):
         print(f"ERROR saving message log: {e}")
 
 def load_business_data(spreadsheet_id):
-    """Loads business configuration and booking provider details from a Google Sheet."""
-    business_data = {'services': {}, 'config': {}, 'bookingIntegration': {}}
+    """Loads business configuration and services from a Google Sheet."""
+    business_data = {'services': {}, 'config': {}}
     try:
         scope = ['https://www.googleapis.com/auth/spreadsheets.readonly']
         gac_json_str = os.getenv("GSPREAD_SERVICE_ACCOUNT_JSON")
@@ -88,15 +87,12 @@ def load_business_data(spreadsheet_id):
 
         for row in spreadsheet.worksheet('Config').get_all_records():
             key, value = str(row.get('Key', '')), str(row.get('Value', ''))
-            if key:
-                if key == 'booking_provider': business_data['bookingIntegration']['provider'] = value.lower()
-                elif key == 'booking_provider_api_key': business_data['bookingIntegration']['apiKey'] = value
-                else: business_data['config'][key] = value
+            if key: business_data['config'][key] = value
         
-        print(f"Successfully loaded data for sheet {spreadsheet_id}")
+        print(f"Successfully loaded knowledge base from sheet {spreadsheet_id}")
         return business_data
     except Exception as e:
-        print(f"\n--- ERROR loading Google Sheet data for sheet ID {spreadsheet_id}: {e} ---")
+        print(f"\n--- ERROR loading Google Sheet data: {e} ---")
         return None
 
 def initialize_openai():
@@ -111,7 +107,7 @@ def format_services_for_prompt(service_dict):
     return "\n".join([f"- {name.title()}: Price is {details['price']}" for name, details in sorted(service_dict.items())])
 
 # --- Step 5: Main AI Logic Function ---
-def get_chatbot_response(user_id, user_prompt, business_data):
+def get_chatbot_response(user_id, user_prompt, business_data, booking_data):
     """Gets a response from OpenAI, using tools that are routed to the correct provider."""
     global conversation_histories
     if user_id not in conversation_histories: conversation_histories[user_id] = []
@@ -144,8 +140,8 @@ def get_chatbot_response(user_id, user_prompt, business_data):
 
         if tool_calls:
             history.append(response_message)
-            provider = business_data.get('bookingIntegration', {}).get('provider', 'none')
-            client_api_key = business_data.get('bookingIntegration', {}).get('apiKey', 'DUMMY_API_KEY')
+            provider = booking_data.get('provider', 'none')
+            client_api_key = booking_data.get('api_key', 'DUMMY_API_KEY')
             
             available_functions = {
                 "check_availability": get_availability_from_provider,
@@ -160,7 +156,6 @@ def get_chatbot_response(user_id, user_prompt, business_data):
                 args = json.loads(tool_call.function.arguments)
                 print(f"[ROUTER] Routing to provider '{provider}' for function '{function_name}'")
                 
-                # Pass all original args plus the dynamic provider info
                 function_response = function_to_call(provider=provider, client_api_key=client_api_key, **args)
                 history.append({"tool_call_id": tool_call.id, "role": "tool", "name": function_name, "content": function_response})
             
@@ -198,12 +193,20 @@ print("--- Initialization Complete. AI Microservice is Ready. ---")
 def process_message_api():
     if request.headers.get('X-Internal-API-Key') != INTERNAL_API_KEY: abort(401)
     data = request.get_json()
-    user_id, msg, sheet_id, token = data.get('user_id'), data.get('message_text'), data.get('sheet_id'), data.get('page_access_token')
+    user_id = data.get('user_id')
+    msg = data.get('message_text')
+    sheet_id = data.get('sheet_id')
+    token = data.get('page_access_token')
+    booking_integration_data = data.get('booking_integration', {})
+    
     if not all([user_id, msg, sheet_id, token]): return jsonify({"error": "Missing required data"}), 400
+    
     business_data = load_business_data(sheet_id)
     if not business_data: return jsonify({"error": f"Failed to load data for sheet_id: {sheet_id}"}), 500
-    bot_response = get_chatbot_response(user_id, msg, business_data)
+    
+    bot_response = get_chatbot_response(user_id, msg, business_data, booking_integration_data)
     send_instagram_message(user_id, bot_response, token)
+    
     save_message({"user_id": user_id, "direction": "incoming", "text": msg, "timestamp": time.time()})
     save_message({"user_id": user_id, "direction": "outgoing", "text": bot_response, "timestamp": time.time()})
     return jsonify({"status": "success", "reply_sent": bot_response}), 200
