@@ -15,12 +15,14 @@ import requests
 from dotenv import load_dotenv
 from oauth2client.service_account import ServiceAccountCredentials
 from flask import Flask, request, abort, jsonify
+from flask_cors import CORS
 from datetime import datetime
 
 # --- Provider Modules ---
 from booking_providers import setmore, square
 
 app = Flask(__name__)
+CORS(app, origins=["ai-inbox-python-service-production.up.railway.app"])
 load_dotenv()
 CHAT_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat_log.json")
 INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
