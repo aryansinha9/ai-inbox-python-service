@@ -24,7 +24,11 @@ from booking_providers import setmore, square
 
 app = Flask(__name__)
 # Allow requests from your Railway app's domain and potentially your local dev environment
-CORS(app, origins=["ai-inbox-python-service-production.up.railway.app", "http://127.0.0.1:5500", "null", "https://www.anantasystems.com"])
+CORS(app, 
+     resources={r"/*": {"origins": "*"}},  # Temporarily allow all origins for debugging
+     supports_credentials=True,
+     allow_headers=["Content-Type", "x-internal-api-key", "Authorization"]
+)
 load_dotenv()
 CHAT_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat_log.json")
 INTERNAL_API_KEY = os.getenv("INTERNAL_API_KEY")
